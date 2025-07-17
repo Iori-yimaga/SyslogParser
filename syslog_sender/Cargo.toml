@@ -1,0 +1,12 @@
+[package]
+name = "syslog-sender"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "syslog_sender"
+path = "syslog_sender.rs"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.0", features = ["derive"] }

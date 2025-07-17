@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syslog Parser - 实时日志监控平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-server"></i>
+                    <h1>Syslog Parser</h1>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="connectionStatus"></div>
+                    <span id="connectionText">连接中...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalMessages">0</h3>
+                        <p>总消息数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="errorCount">0</h3>
+                        <p>错误消息</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="infoCount">0</h3>
+                        <p>信息消息</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="sourceCount">0</h3>
+                        <p>活跃源</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls -->
+        <section class="controls-section">
+            <div class="controls">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="搜索日志消息...">
+                </div>
+                <div class="filter-group">
+                    <select id="facilityFilter">
+                        <option value="">所有设施</option>
+                    </select>
+                    <select id="severityFilter">
+                        <option value="">所有严重性</option>
+                        <option value="0">Emergency</option>
+                        <option value="1">Alert</option>
+                        <option value="2">Critical</option>
+                        <option value="3">Error</option>
+                        <option value="4">Warning</option>
+                        <option value="5">Notice</option>
+                        <option value="6">Info</option>
+                        <option value="7">Debug</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button id="refreshBtn" class="btn btn-success">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                    <div class="auto-refresh-group">
+                        <button id="autoRefreshBtn" class="btn btn-info auto-refresh-btn">
+                            <i class="fas fa-clock"></i> 自动刷新
+                        </button>
+                        <select id="autoRefreshInterval" class="refresh-interval">
+                            <option value="0">关闭</option>
+                            <option value="5">5秒</option>
+                            <option value="10" selected>10秒</option>
+                            <option value="30">30秒</option>
+                            <option value="60">1分钟</option>
+                            <option value="300">5分钟</option>
+                        </select>
+                    </div>
+                    <button id="pauseBtn" class="btn btn-secondary">
+                        <i class="fas fa-pause"></i> 暂停
+                    </button>
+                    <button id="clearBtn" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                    <button id="exportBtn" class="btn btn-primary">
+                        <i class="fas fa-download"></i> 导出
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logs Table -->
+        <section class="logs-section">
+            <div class="table-container">
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>严重性</th>
+                            <th>设施</th>
+                            <th>主机</th>
+                            <th>应用</th>
+                            <th>消息</th>
+                            <th>源IP</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <!-- Logs will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prevBtn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-chevron-left"></i> 上一页
+                </button>
+                <span id="pageInfo">第 1 页</span>
+                <button id="nextBtn" class="btn btn-secondary">
+                    下一页 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Log Detail Modal -->
+    <div id="logModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>日志详情</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="logModalBody">
+                <!-- Log details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h2 id="confirmTitle">确认操作</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">确定要执行此操作吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmCancel" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button id="confirmOk" class="btn btn-danger">
+                    <i class="fas fa-check"></i> 确定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
